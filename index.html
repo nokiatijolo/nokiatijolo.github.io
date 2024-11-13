@@ -18,6 +18,10 @@
             min-height: 100vh;
             background-color: #f0f0f0;
         }
+        @font-face {
+            font-family: 'SantaAirMail';
+            src: url('https://nokiatijolo.github.io/Santa\'s%20Air%20Mail.ttf') format('truetype');
+        }
         #game {
             position: relative;
             width: 90%;
@@ -105,6 +109,16 @@
             background-size: cover;
             opacity: 0.5;
         }
+        #fallingText {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: 'SantaAirMail', sans-serif;
+            font-size: 40px;
+            color: red;
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -117,6 +131,7 @@
         <div id="item"></div>
         <div id="itemMessage">Pegue o item para ganhar imunidade por 10 segundos!</div>
         <div id="gameOver">GAME OVER!</div>
+        <div id="fallingText">Nokia não cai</div>
     </div>
     <div id="footer">
         <p>O orçamento é baixo, esperava o quê? kkk</p>
@@ -132,6 +147,7 @@
         const item = document.getElementById('item');
         const itemMessage = document.getElementById('itemMessage');
         const nokiaImmunityEffect = document.getElementById('nokiaImmunityEffect');
+        const fallingText = document.getElementById('fallingText');
 
         let isJumping = false;
         let jumpHeight = 0;
@@ -155,7 +171,7 @@
 
             let jumpInterval = setInterval(() => {
                 if (jumpHeight < jumpPower) {
-                    jumpHeight += 30;  
+                    jumpHeight += 30;
                     nokia.style.bottom = jumpHeight + 'px';
                 } else {
                     clearInterval(jumpInterval);
@@ -163,6 +179,11 @@
                         if (jumpHeight > 0) {
                             jumpHeight -= gravity;
                             nokia.style.bottom = jumpHeight + 'px';
+                            if (jumpHeight > 50) {
+                                fallingText.style.display = 'none';
+                            } else {
+                                fallingText.style.display = 'block';
+                            }
                         } else {
                             clearInterval(fallInterval);
                             isJumping = false;
@@ -234,26 +255,29 @@
         }
 
         function generateItem() {
-            const randomX = Math.random() * (game.clientWidth - 50);
-            const randomY = Math.random() * (game.clientHeight - 100);
-            item.style.left = `${randomX}px`;
-            item.style.top = `${randomY}px`;
-            item.style.display = 'block';
-            itemMessage.style.display = 'block';
+            if (!gameRunning) return;
+            const randomChance = Math.random();
+            if (randomChance < 0.2) {
+                item.style.display = 'block';
+                item.style.left = `${Math.random() * game.clientWidth}px`;
+                item.style.top = `${Math.random() * (game.clientHeight - 50)}px`;
+            }
         }
 
         function collectItem() {
-            if (nokia.getBoundingClientRect().left < item.getBoundingClientRect().right &&
-                nokia.getBoundingClientRect().right > item.getBoundingClientRect().left &&
-                nokia.getBoundingClientRect().bottom > item.getBoundingClientRect().top) {
-
+            const nokiaRect = nokia.getBoundingClientRect();
+            const itemRect = item.getBoundingClientRect();
+            if (
+                nokiaRect.right > itemRect.left &&
+                nokiaRect.left < itemRect.right &&
+                nokiaRect.bottom > itemRect.top &&
+                item.style.display === 'block'
+            ) {
                 item.style.display = 'none';
                 itemMessage.style.display = 'none';
-                immune = true;
+                immunityTime = Date.now() + 10000;
                 nokiaImmunityEffect.style.display = 'block';
-
                 setTimeout(() => {
-                    immune = false;
                     nokiaImmunityEffect.style.display = 'none';
                 }, 10000);
             }
