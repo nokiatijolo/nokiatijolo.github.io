@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jogo Nokia Tijolão Meme</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background-color: #f0f0f0;
+        }
+        #game {
+            position: relative;
+            width: 90%;
+            max-width: 900px;
+            height: 400px;
+            background-color: #e0e0e0;
+            border: 5px solid #222;
+            border-radius: 15px;
+            overflow: hidden;
+        }
+        #nokia {
+            position: absolute;
+            bottom: 0;
+            left: 30px;
+            width: 60px;
+            height: 120px;
+            background-image: url('https://seeklogo.com/images/N/nokia-3310-logo-82D4F3D1AA-seeklogo.com.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+        }
+        .obstacle, .building {
+            position: absolute;
+            bottom: 0;
+            background-size: cover;
+        }
+        .obstacle {
+            background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS2kmxoVqka51TDYDf5GJrwih69o5XNS7MeaSqpoQ-qg7tZDPI4CHvLmFs&s=10');
+        }
+        .building {
+            background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTQ2e9ZwmrNTjJ8q1jdNRzX_AzuiQJxeFw0ZA&usqp=CAU');
+        }
+        #scoreboard {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 20px;
+        }
+        #gameOver {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 40px;
+            color: red;
+        }
+        #footer {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 24px;
+            color: black;
+        }
+        #footer img {
+            width: 150px;
+            margin-top: 15px;
+        }
+        #item {
+            position: absolute;
+            top: 50px;
+            left: 80%;
+            width: 50px;
+            height: 50px;
+            background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ20ObDyZXSCOiOnkSFSoZmPZMesv_vwFuJag&s');
+            background-size: contain;
+            background-repeat: no-repeat;
+            display: none;
+        }
+        #itemMessage {
+            position: absolute;
+            top: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 24px;
+            color: black;
+            display: none;
+        }
+        #nokiaImmunityEffect {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRIXAxOtim0SRro9Na_AAEu10on3alvfU1eaHHo-uOqVjJYr5zE6PJLuC9M&s=10');
+            background-size: cover;
+            opacity: 0.5;
+        }
+    </style>
+</head>
+<body>
+    <div id="game">
+        <div id="scoreboard">
+            Pulos: <span id="jumpCount">0</span> | Distância: <span id="distance">0</span>m | Nível: <span id="level">1</span>
+        </div>
+        <div id="nokia"></div>
+        <div id="nokiaImmunityEffect"></div>
+        <div id="item"></div>
+        <div id="itemMessage">Pegue o item para ganhar imunidade por 10 segundos!</div>
+        <div id="gameOver">GAME OVER!</div>
+    </div>
+    <div id="footer">
+        <p>O orçamento é baixo, esperava o quê? kkk</p>
+        <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ9NVFpeLpHIWTWAF0ecmU3KsvIhFeOOZ5f8A&s" alt="Imagem Engraçada">
+    </div>
+    <script>
+        const nokia = document.getElementById('nokia');
+        const game = document.getElementById('game');
+        const jumpCountDisplay = document.getElementById('jumpCount');
+        const distanceDisplay = document.getElementById('distance');
+        const levelDisplay = document.getElementById('level');
+        const gameOverMessage = document.getElementById('gameOver');
+        const item = document.getElementById('item');
+        const itemMessage = document.getElementById('itemMessage');
+        const nokiaImmunityEffect = document.getElementById('nokiaImmunityEffect');
+
+        let isJumping = false;
+        let jumpHeight = 0;
+        let jumpCount = 0;
+        let distance = 0;
+        let level = 1;
+        let obstacleSpeed = 4;
+        let gameRunning = true;
+        let obstacleInterval;
+        let currentObstacles = [];
+        let immunityTime = 0;
+        const gravity = 8;
+        const jumpPower = 400;
+        let immune = false;
+
+        function jump() {
+            if (isJumping || !gameRunning) return;
+            isJumping = true;
+            jumpCount++;
+            jumpCountDisplay.textContent = jumpCount;
+
+            let jumpInterval = setInterval(() => {
+                if (jumpHeight < jumpPower) {
+                    jumpHeight += 30;  
+                    nokia.style.bottom = jumpHeight + 'px';
+                } else {
+                    clearInterval(jumpInterval);
+                    let fallInterval = setInterval(() => {
+                        if (jumpHeight > 0) {
+                            jumpHeight -= gravity;
+                            nokia.style.bottom = jumpHeight + 'px';
+                        } else {
+                            clearInterval(fallInterval);
+                            isJumping = false;
+                        }
+                    }, 20);
+                }
+            }, 20);
+        }
+
+        document.addEventListener('click', jump);
+
+        function createObstacle() {
+            if (!gameRunning) return;
+
+            const obstacleType = Math.random() > 0.5 ? 'obstacle' : 'building';
+            const obstacle = document.createElement('div');
+            obstacle.classList.add(obstacleType);
+
+            const obstacleHeight = Math.random() * 100 + 30;
+            const obstacleWidth = Math.random() * 80 + 40;
+            obstacle.style.width = `${obstacleWidth}px`;
+            obstacle.style.height = `${obstacleHeight}px`;
+            game.appendChild(obstacle);
+
+            let obstaclePosition = game.clientWidth;
+
+            const moveObstacle = setInterval(() => {
+                if (!gameRunning) {
+                    clearInterval(moveObstacle);
+                    return;
+                }
+                obstaclePosition -= obstacleSpeed;
+                obstacle.style.left = `${obstaclePosition}px`;
+
+                const nokiaRect = nokia.getBoundingClientRect();
+                const obstacleRect = obstacle.getBoundingClientRect();
+
+                if (
+                    nokiaRect.right > obstacleRect.left &&
+                    nokiaRect.left < obstacleRect.right &&
+                    nokiaRect.bottom > obstacleRect.top &&
+                    !immune
+                ) {
+                    endGame();
+                }
+
+                if (obstaclePosition < -50) {
+                    clearInterval(moveObstacle);
+                    obstacle.remove();
+                }
+            }, 20);
+        }
+
+        function endGame() {
+            gameRunning = false;
+            gameOverMessage.style.display = 'block';
+        }
+
+        function updateDistance() {
+            if (gameRunning) {
+                distance++;
+                distanceDisplay.textContent = distance;
+                if (distance % 100 === 0) {
+                    level++;
+                    levelDisplay.textContent = level;
+                    obstacleSpeed += 0.5;
+                }
+            }
+        }
+
+        function generateItem() {
+            const randomX = Math.random() * (game.clientWidth - 50);
+            const randomY = Math.random() * (game.clientHeight - 100);
+            item.style.left = `${randomX}px`;
+            item.style.top = `${randomY}px`;
+            item.style.display = 'block';
+            itemMessage.style.display = 'block';
+        }
+
+        function collectItem() {
+            if (nokia.getBoundingClientRect().left < item.getBoundingClientRect().right &&
+                nokia.getBoundingClientRect().right > item.getBoundingClientRect().left &&
+                nokia.getBoundingClientRect().bottom > item.getBoundingClientRect().top) {
+
+                item.style.display = 'none';
+                itemMessage.style.display = 'none';
+                immune = true;
+                nokiaImmunityEffect.style.display = 'block';
+
+                setTimeout(() => {
+                    immune = false;
+                    nokiaImmunityEffect.style.display = 'none';
+                }, 10000);
+            }
+        }
+
+        setInterval(createObstacle, 1500);
+        setInterval(updateDistance, 100);
+        setInterval(generateItem, 10000);
+        setInterval(collectItem, 20);
+    </script>
+</body>
+</html>
